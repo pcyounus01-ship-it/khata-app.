@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Khaata — Business Ledger</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0F1720">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=Noto+Nastaliq+Urdu:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0F1720; --surface:#171F29; --surface-2:#1E2733; --line: rgba(237,239,242,0.08);
+    --gold:#C9A227; --gold-dim: rgba(201,162,39,0.15);
+    --teal:#3EB8A1; --teal-dim: rgba(62,184,161,0.15);
+    --coral:#E8604C; --coral-dim: rgba(232,96,76,0.15);
+    --text:#EDEFF2; --muted:#8B93A1;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{ background: var(--ink); color: var(--text); font-family:'Inter', sans-serif; display:flex; justify-content:center; min-height:100vh; }
+  body[dir="rtl"] .num{ direction: ltr; unicode-bidi: isolate; display:inline-block; }
+  body.lang-ur, body.lang-ur input, body.lang-ur select, body.lang-ur textarea{ font-family: 'Noto Nastaliq Urdu', serif; }
+
+  .app{ width:100%; max-width: 460px; min-height:100vh; background: var(--surface); display:flex; flex-direction:column; position:relative; }
+  .topbar{ padding: 18px 20px 12px; display:flex; align-items:flex-start; justify-content:space-between; flex-shrink:0; position:sticky; top:0; background:var(--surface); z-index:5; border-bottom:1px solid var(--line); }
+  .brand-mark{ font-family:'Fraunces', serif; font-size: 21px; font-weight:600; }
+  .brand-mark .dot{ color: var(--gold); }
+  .brand-sub{ font-size: 11px; color: var(--muted); margin-top:2px; display:flex; align-items:center; gap:5px;}
+  .sync-dot{ width:6px;height:6px;border-radius:50%; background:var(--teal); display:inline-block;}
+  .sync-dot.local{ background: var(--muted); }
+  .lang-switch{ display:flex; background: var(--surface-2); border-radius: 999px; padding: 3px; gap: 2px; border: 1px solid var(--line); height:fit-content;}
+  .lang-switch button{ border:none; background:transparent; color: var(--muted); font-size: 10.5px; padding: 5px 9px; border-radius: 999px; cursor:pointer; font-family:'Inter',sans-serif; font-weight:600; }
+  .lang-switch button.active{ background: var(--gold); color: #14110a; }
+
+  .screens{ flex:1; overflow-y:auto; padding: 4px 20px 110px; }
+  .screen{ display:none; }
+  .screen.active{ display:block; animation: fadeUp .3s ease; }
+  @keyframes fadeUp{ from{opacity:0; transform: translateY(6px);} to{opacity:1; transform:none;} }
+
+  h2.page-title{ font-family:'Fraunces',serif; font-size: 20px; font-weight:600; margin: 16px 0 2px; }
+  p.page-sub{ font-size:12px; color:var(--muted); margin: 0 0 14px; }
+
+  .hero-card{ background: linear-gradient(155deg, var(--surface-2), var(--surface)); border: 1px solid var(--line); border-radius: 18px; padding: 20px; }
+  .hero-label{ font-size:11px; color:var(--muted); margin-bottom:6px;}
+  .hero-figure{ font-family:'Fraunces', serif; font-size: 32px; font-weight: 600; }
+  .hero-figure.pos{ color: var(--teal); } .hero-figure.neg{ color: var(--coral); }
+  .hero-figure .cur{ font-size: 16px; color: var(--muted); font-weight:500; margin-inline-end:2px;}
+  .hero-split{ display:flex; gap:10px; margin-top:16px; }
+  .mini{ flex:1; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+  .mini .k{ font-size:10.5px; color:var(--muted); margin-bottom:4px;} .mini .v{ font-family:'Fraunces',serif; font-size:16px; font-weight:600;}
+  .mini.spend .v{ color: var(--coral); } .mini.earn .v{ color: var(--teal); }
+
+  .section-head{ display:flex; align-items:baseline; justify-content:space-between; margin: 20px 0 10px; }
+  .section-title{ font-size:13px; font-weight:700; }
+  .section-link{ font-size:11px; color:var(--gold); cursor:pointer; background:none; border:none; font-family:inherit; }
+
+  .chart-card{ background: var(--surface-2); border:1px solid var(--line); border-radius: 16px; padding: 16px 14px 10px; }
+  .chart-legend{ display:flex; gap:14px; font-size:10.5px; color:var(--muted); margin-bottom:10px;}
+  .chart-legend span{ display:inline-flex; align-items:center; gap:5px;} .chart-legend i{ width:8px; height:8px; border-radius:2px; display:inline-block;}
+
+  .list-card{ background: var(--surface-2); border:1px solid var(--line); border-radius: 16px; padding: 4px 14px; }
+  .row-item{ display:flex; align-items:center; justify-content:space-between; padding: 11px 0; border-bottom: 1px solid var(--line); gap:8px; }
+  .row-item:last-child{ border-bottom:none; }
+  .row-left{ display:flex; align-items:center; gap:11px; min-width:0; }
+  .avatar{ width:36px;height:36px;border-radius:10px; background: var(--surface); display:flex;align-items:center;justify-content:center; font-family:'Fraunces',serif; font-weight:600; font-size:14px; color: var(--gold); border:1px solid var(--line); flex-shrink:0; }
+  .row-name{ font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .row-sub{ font-size:10.5px; color:var(--muted); margin-top:1px;}
+  .row-amt{ font-family:'Fraunces',serif; font-size:14px; font-weight:600; text-align:end; flex-shrink:0;}
+  .row-amt.neg{ color:var(--coral); } .row-amt.pos{ color:var(--teal); }
+  .row-actions{ display:flex; gap:6px; }
+  .icon-btn{ border:none; background:var(--surface); color:var(--muted); width:26px;height:26px;border-radius:8px; font-size:13px; cursor:pointer; display:flex;align-items:center;justify-content:center; }
+  .icon-btn:hover{ color:var(--text); }
+
+  .pill-tag{ font-size:9.5px; padding: 3px 8px; border-radius: 999px; display:inline-block; margin-top:3px;}
+  .pill-tag.due{ background: var(--coral-dim); color: var(--coral); } .pill-tag.owe{ background: var(--gold-dim); color: var(--gold); } .pill-tag.done{ background: var(--teal-dim); color: var(--teal); }
+
+  .client-card{ background: var(--surface-2); border:1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+  .client-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:8px;}
+  .client-name{ font-family:'Fraunces',serif; font-weight:600; font-size:15px;}
+  .client-service{ font-size:11px; color: var(--gold); margin-top:2px;}
+  .client-price{ text-align:end; flex-shrink:0; }
+  .client-price .v{ font-family:'Fraunces',serif; font-weight:600; font-size:14px;}
+  .client-meta{ display:flex; gap:12px; margin-top:10px; font-size:10.5px; color:var(--muted); flex-wrap:wrap;}
+  .progress-track{ height:5px; background: var(--surface); border-radius:3px; margin-top:10px; overflow:hidden;}
+  .progress-fill{ height:100%; background: var(--teal); border-radius:3px;}
+  .client-actions{ display:flex; gap:8px; margin-top:12px; }
+  .btn-sm{ flex:1; border:1px solid var(--line); background:var(--surface); color:var(--text); font-size:11px; font-weight:600; padding:7px; border-radius:8px; cursor:pointer; font-family:inherit; }
+  .btn-sm.danger{ color:var(--coral); }
+
+  .tab-toggle{ display:flex; background: var(--surface-2); border-radius: 999px; padding:3px; border:1px solid var(--line); margin-bottom:14px; }
+  .tab-toggle button{ flex:1; border:none;background:transparent; padding:8px 4px; font-size:12px; font-weight:600; color:var(--muted); border-radius: 999px; cursor:pointer; font-family: inherit; }
+  .tab-toggle button.active{ background: var(--ink); color: var(--text); }
+
+  .bottom-nav{ position:sticky; bottom:0; background: var(--surface); border-top:1px solid var(--line); display:flex; padding: 8px 10px calc(14px + env(safe-area-inset-bottom)); flex-shrink:0; }
+  .nav-btn{ flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; background:none; border:none; color: var(--muted); cursor:pointer; font-size: 9.5px; font-family:'Inter',sans-serif; font-weight:600; }
+  .nav-btn.active{ color: var(--gold); }
+  .nav-icon{ width:20px; height:20px; }
+
+  .fab{ position:fixed; bottom: 88px; right: 22px; width:52px;height:52px; border-radius: 16px; background: var(--gold); color:#14110a; border:none; font-size:26px; line-height:1; box-shadow: 0 12px 24px rgba(201,162,39,0.35); cursor:pointer; display:flex;align-items:center;justify-content:center; z-index:6; }
+  body[dir="rtl"] .fab{ right:auto; left:22px; }
+  @media (min-width:461px){ .fab{ right: calc(50% - 230px + 22px); } body[dir="rtl"] .fab{ left: calc(50% - 230px + 22px); right:auto; } }
+
+  .empty-note{ font-size: 11px; color: var(--muted); text-align:center; padding: 18px 10px; border: 1px dashed var(--line); border-radius: 12px; }
+
+  .overlay{ position:fixed; inset:0; background:rgba(0,0,0,0.55); display:none; align-items:flex-end; justify-content:center; z-index:20; }
+  .overlay.active{ display:flex; }
+  .sheet{ background: var(--surface); width:100%; max-width:460px; border-radius: 20px 20px 0 0; padding: 18px 20px calc(20px + env(safe-area-inset-bottom)); max-height:88vh; overflow-y:auto; }
+  .sheet-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+  .sheet-title{ font-family:'Fraunces',serif; font-size:18px; font-weight:600; }
+  .sheet-close{ background:var(--surface-2); border:none; color:var(--muted); width:28px;height:28px;border-radius:8px; cursor:pointer; font-size:14px; }
+  .field{ margin-bottom:12px; }
+  .field label{ display:block; font-size:11px; color:var(--muted); margin-bottom:5px; font-weight:600; }
+  .field input, .field select, .field textarea{ width:100%; background: var(--surface-2); border:1px solid var(--line); color:var(--text); padding:10px 12px; border-radius:10px; font-size:13.5px; font-family:inherit; }
+  .field textarea{ resize:vertical; min-height:56px; }
+  .seg{ display:flex; gap:8px; }
+  .seg button{ flex:1; padding:9px; border-radius:10px; border:1px solid var(--line); background:var(--surface-2); color:var(--muted); font-weight:700; font-size:12.5px; cursor:pointer; font-family:inherit; }
+  .seg button.active.income{ background: var(--teal-dim); color:var(--teal); border-color:var(--teal); }
+  .seg button.active.expense{ background: var(--coral-dim); color:var(--coral); border-color:var(--coral); }
+  .seg button.active.iOwe{ background: var(--gold-dim); color:var(--gold); border-color:var(--gold); }
+  .seg button.active.owedToMe{ background: var(--teal-dim); color:var(--teal); border-color:var(--teal); }
+  .save-btn{ width:100%; background:var(--gold); color:#14110a; border:none; padding:13px; border-radius:12px; font-weight:700; font-size:14px; cursor:pointer; margin-top:6px; font-family:inherit; }
+  .local-banner{ background: var(--gold-dim); color:var(--gold); font-size:10.5px; padding:8px 12px; border-radius:10px; margin-bottom:14px; text-align:center; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div>
+      <div class="brand-mark" data-i18n="brand">Khaata<span class="dot">.</span></div>
+      <div class="brand-sub"><span class="sync-dot" id="syncDot"></span><span id="syncLabel" data-i18n="syncing">Syncing…</span></div>
+    </div>
+    <div class="lang-switch">
+      <button data-lang="en" class="active">EN</button>
+      <button data-lang="ur">اردو</button>
+      <button data-lang="roman">Roman</button>
+    </div>
+  </div>
+
+  <div class="screens">
+    <!-- DASHBOARD -->
+    <div class="screen active" id="screen-dashboard">
+      <h2 class="page-title" data-i18n="dashTitle">Today's Summary</h2>
+      <p class="page-sub" id="todayDate"></p>
+      <div id="localBanner" class="local-banner" style="display:none;" data-i18n="localBanner">Saved on this device only — sign in isn't syncing right now.</div>
+
+      <div class="hero-card">
+        <div class="hero-label" data-i18n="netMonth">Net this month</div>
+        <div class="hero-figure" id="monthNet"><span class="cur">Rs</span><span class="num">0</span></div>
+        <div class="hero-split">
+          <div class="mini earn"><div class="k" data-i18n="earned">Earned</div><div class="v num" id="monthEarn">0</div></div>
+          <div class="mini spend"><div class="k" data-i18n="spent">Spent</div><div class="v num" id="monthSpend">0</div></div>
+        </div>
+      </div>
+
+      <div class="section-head"><div class="section-title" data-i18n="weeklyFlow">This week's flow</div></div>
+      <div class="chart-card">
+        <div class="chart-legend"><span><i style="background:var(--teal)"></i><span data-i18n="earned">Earned</span></span><span><i style="background:var(--coral)"></i><span data-i18n="spent">Spent</span></span></div>
+        <svg viewBox="0 0 320 140" width="100%" height="140"><g id="bars"></g><g id="daylabels" font-family="Inter" font-size="9" fill="var(--muted)"></g></svg>
+      </div>
+
+      <div class="section-head"><div class="section-title" data-i18n="recentEntries">Recent entries</div></div>
+      <div class="list-card" id="recentList"></div>
+
+      <div class="section-head"><div class="section-title" data-i18n="loanSnapshot">Loan snapshot</div><button class="section-link" onclick="showScreen('loans')" data-i18n="viewAll">View all</button></div>
+      <div class="list-card" id="loanSnapshotList"></div>
+    </div>
+
+    <!-- CLIENTS -->
+    <div class="screen" id="screen-clients">
+      <h2 class="page-title" data-i18n="clientsTitle">Clients</h2>
+      <p class="page-sub" data-i18n="clientsSub">Project details, access &amp; payments</p>
+      <div id="clientsList"></div>
+    </div>
+
+    <!-- LOANS -->
+    <div class="screen" id="screen-loans">
+      <h2 class="page-title" data-i18n="loansTitle">Loans</h2>
+      <p class="page-sub" data-i18n="loansSub">What you owe &amp; what's owed to you</p>
+      <div class="tab-toggle">
+        <button class="active" id="tab-iOwe" onclick="setLoanTab('iOwe')" data-i18n="iOwe">I owe</button>
+        <button id="tab-owedToMe" onclick="setLoanTab('owedToMe')" data-i18n="owedMe">Owed to me</button>
+      </div>
+      <div id="loansList"></div>
+    </div>
+
+    <!-- REPORTS -->
+    <div class="screen" id="screen-reports">
+      <h2 class="page-title" data-i18n="reportsTitle">Reports</h2>
+      <p class="page-sub" id="reportMonthLabel"></p>
+      <div class="chart-card">
+        <div class="chart-legend"><span><i style="background:var(--teal)"></i><span data-i18n="earned">Earned</span></span><span><i style="background:var(--coral)"></i><span data-i18n="spent">Spent</span></span></div>
+        <svg viewBox="0 0 320 150" width="100%" height="150"><g id="linechart"></g></svg>
+      </div>
+      <div class="section-head"><div class="section-title" data-i18n="byCategory">Earning by category</div></div>
+      <div class="list-card" id="categoryList"></div>
+    </div>
+  </div>
+
+  <button class="fab" onclick="openFabAction()">+</button>
+  <div class="bottom-nav">
+    <button class="nav-btn active" data-screen="dashboard" onclick="showScreen('dashboard')">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/></svg>
+      <span data-i18n="navDash">Dashboard</span>
+    </button>
+    <button class="nav-btn" data-screen="clients" onclick="showScreen('clients')">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="7" r="3.2"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="17.5" cy="8" r="2.6"/><path d="M15 14.2c2.9.3 5 2.3 5.5 5.3"/></svg>
+      <span data-i18n="navClients">Clients</span>
+    </button>
+    <button class="nav-btn" data-screen="loans" onclick="showScreen('loans')">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h10"/><circle cx="19" cy="17" r="2.3"/></svg>
+      <span data-i18n="navLoans">Loans</span>
+    </button>
+    <button class="nav-btn" data-screen="reports" onclick="showScreen('reports')">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M11 20V4M18 20v-7"/></svg>
+      <span data-i18n="navReports">Reports</span>
+    </button>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="overlay" id="overlay-transaction"><div class="sheet">
+  <div class="sheet-head"><div class="sheet-title" data-i18n="addEntry">Add Entry</div><button class="sheet-close" onclick="closeModal('overlay-transaction')">✕</button></div>
+  <div class="seg" id="txTypeSeg">
+    <button class="active income" data-val="income" onclick="setTxType('income')" data-i18n="income">Income</button>
+    <button class="expense" data-val="expense" onclick="setTxType('expense')" data-i18n="expense">Expense</button>
+  </div>
+  <div class="field" style="margin-top:12px;"><label data-i18n="amount">Amount (Rs)</label><input type="number" id="txAmount" inputmode="decimal" placeholder="0"></div>
+  <div class="field"><label data-i18n="category">Category</label><select id="txCategory"></select></div>
+  <div class="field" id="txClientField" style="display:none;"><label data-i18n="linkClient">Link to client (optional)</label><select id="txClient"><option value="">—</option></select></div>
+  <div class="field"><label data-i18n="note">Note</label><input type="text" id="txNote" placeholder=""></div>
+  <div class="field"><label data-i18n="date">Date</label><input type="date" id="txDate"></div>
+  <button class="save-btn" onclick="saveTransaction()" data-i18n="save">Save</button>
+</div></div>
+
+<div class="overlay" id="overlay-client"><div class="sheet">
+  <div class="sheet-head"><div class="sheet-title" data-i18n="addClient">Add Client</div><button class="sheet-close" onclick="closeModal('overlay-client')">✕</button></div>
+  <div class="field"><label data-i18n="name">Name</label><input type="text" id="clName"></div>
+  <div class="field"><label data-i18n="phone">Phone</label><input type="text" id="clPhone"></div>
+  <div class="field"><label data-i18n="email">Email</label><input type="text" id="clEmail"></div>
+  <div class="field"><label data-i18n="website">Website</label><input type="text" id="clWebsite"></div>
+  <div class="field"><label data-i18n="service">Service</label><select id="clService"></select></div>
+  <div class="field"><label data-i18n="totalPrice">Total price (Rs)</label><input type="number" id="clPrice"></div>
+  <div class="field"><label data-i18n="paidSoFar">Paid so far (Rs)</label><input type="number" id="clPaid" value="0"></div>
+  <div class="field"><label data-i18n="accessNotes">Access / handover notes</label><textarea id="clAccess" placeholder="Logins, hosting, domain, credentials…"></textarea></div>
+  <button class="save-btn" onclick="saveClient()" data-i18n="save">Save</button>
+</div></div>
+
+<div class="overlay" id="overlay-loan"><div class="sheet">
+  <div class="sheet-head"><div class="sheet-title" data-i18n="addLoan">Add Loan</div><button class="sheet-close" onclick="closeModal('overlay-loan')">✕</button></div>
+  <div class="seg" id="loanDirSeg">
+    <button class="active iOwe" data-val="iOwe" onclick="setLoanDir('iOwe')" data-i18n="iOwe">I owe</button>
+    <button class="owedToMe" data-val="owedToMe" onclick="setLoanDir('owedToMe')" data-i18n="owedMe">Owed to me</button>
+  </div>
+  <div class="field" style="margin-top:12px;"><label data-i18n="name">Name</label><input type="text" id="lnName"></div>
+  <div class="field"><label data-i18n="phone">Phone</label><input type="text" id="lnPhone"></div>
+  <div class="field"><label data-i18n="totalAmount">Total amount (Rs)</label><input type="number" id="lnTotal"></div>
+  <div class="field"><label data-i18n="paidSoFar">Paid so far (Rs)</label><input type="number" id="lnPaid" value="0"></div>
+  <button class="save-btn" onclick="saveLoan()" data-i18n="save">Save</button>
+</div></div>
+
+<script>
+/* ---------------- Translations ---------------- */
+const translations = {
+  en: { brand:"Khaata.", syncing:"Syncing…", synced:"Synced to your account", localOnly:"Local only",
+    dashTitle:"Today's Summary", localBanner:"Saved on this device only — sign in isn't syncing right now.",
+    netMonth:"Net this month", earned:"Earned", spent:"Spent", weeklyFlow:"This week's flow",
+    recentEntries:"Recent entries", loanSnapshot:"Loan snapshot", viewAll:"View all",
+    clientsTitle:"Clients", clientsSub:"Project details, access & payments",
+    loansTitle:"Loans", loansSub:"What you owe & what's owed to you", iOwe:"I owe", owedMe:"Owed to me",
+    reportsTitle:"Reports", byCategory:"Earning by category",
+    navDash:"Dashboard", navClients:"Clients", navLoans:"Loans", navReports:"Reports",
+    addEntry:"Add Entry", income:"Income", expense:"Expense", amount:"Amount (Rs)", category:"Category",
+    linkClient:"Link to client (optional)", note:"Note", date:"Date", save:"Save",
+    addClient:"Add Client", name:"Name", phone:"Phone", email:"Email", website:"Website", service:"Service",
+    totalPrice:"Total price (Rs)", paidSoFar:"Paid so far (Rs)", accessNotes:"Access / handover notes",
+    addLoan:"Add Loan", totalAmount:"Total amount (Rs)", addPayment:"+ Payment", delete:"Delete",
+    remaining:"Remaining", noEntries:"No entries yet. Tap + to add one.", noClients:"No clients yet. Tap + to add one.",
+    noLoans:"Nothing here yet. Tap + to add one.", confirmDelete:"Delete this?",
+    catWebsite:"Website Development", catSeo:"SEO", catAds:"Google Ads", catDesign:"Graphic Design", catOther:"Other Service",
+    catPersonal:"Personal", catHousehold:"Household", catRestaurant:"Restaurant", catMedical:"Medical", catFees:"Fees", catBills:"Bills", catOtherExp:"Other",
+    fullPaid:"Fully paid", halfPaid:"Partially paid", pending:"Pending", enterAmount:"Please enter an amount", enterName:"Please enter a name"
+  },
+  ur: { brand:"کھاتہ.", syncing:"سِنک ہو رہا ہے…", synced:"آپ کے اکاؤنٹ سے محفوظ", localOnly:"صرف اسی ڈیوائس پر",
+    dashTitle:"آج کا خلاصہ", localBanner:"فی الحال صرف اسی ڈیوائس پر محفوظ ہو رہا ہے۔",
+    netMonth:"اس ماہ کی مجموعی آمدنی", earned:"کمائی", spent:"خرچ", weeklyFlow:"اس ہفتے کا حساب",
+    recentEntries:"حالیہ اندراجات", loanSnapshot:"قرض کا خلاصہ", viewAll:"سب دیکھیں",
+    clientsTitle:"کلائنٹس", clientsSub:"پراجیکٹ کی تفصیلات، رسائی اور ادائیگیاں",
+    loansTitle:"قرضے", loansSub:"جو آپ نے دینا ہے اور جو آپ کو ملنا ہے", iOwe:"میں نے دینا ہے", owedMe:"مجھے ملنا ہے",
+    reportsTitle:"رپورٹس", byCategory:"کیٹیگری کے حساب سے آمدنی",
+    navDash:"ڈیش بورڈ", navClients:"کلائنٹس", navLoans:"قرضے", navReports:"رپورٹس",
+    addEntry:"اندراج شامل کریں", income:"آمدنی", expense:"خرچ", amount:"رقم (روپے)", category:"کیٹیگری",
+    linkClient:"کلائنٹ سے منسلک کریں (اختیاری)", note:"نوٹ", date:"تاریخ", save:"محفوظ کریں",
+    addClient:"کلائنٹ شامل کریں", name:"نام", phone:"فون", email:"ای میل", website:"ویب سائٹ", service:"سروس",
+    totalPrice:"کل قیمت (روپے)", paidSoFar:"اب تک ادا شدہ (روپے)", accessNotes:"رسائی / حوالگی کے نوٹس",
+    addLoan:"قرض شامل کریں", totalAmount:"کل رقم (روپے)", addPayment:"+ ادائیگی", delete:"حذف کریں",
+    remaining:"باقی", noEntries:"ابھی کوئی اندراج نہیں۔ + دبائیں۔", noClients:"ابھی کوئی کلائنٹ نہیں۔ + دبائیں۔",
+    noLoans:"ابھی کچھ نہیں۔ + دبائیں۔", confirmDelete:"کیا آپ اسے حذف کرنا چاہتے ہیں؟",
+    catWebsite:"ویب سائٹ ڈویلپمنٹ", catSeo:"ایس ای او", catAds:"گوگل ایڈز", catDesign:"گرافک ڈیزائن", catOther:"دیگر سروس",
+    catPersonal:"ذاتی", catHousehold:"گھریلو", catRestaurant:"ریسٹورنٹ", catMedical:"طبی", catFees:"فیس", catBills:"بل", catOtherExp:"دیگر",
+    fullPaid:"مکمل ادا شدہ", halfPaid:"جزوی ادائیگی", pending:"باقی ہے", enterAmount:"براہ کرم رقم درج کریں", enterName:"براہ کرم نام درج کریں"
+  },
+  roman: { brand:"Khaata.", syncing:"Sync ho raha hai…", synced:"Aapke account mein save ho raha hai", localOnly:"Sirf isi device par",
+    dashTitle:"Aaj ka Khulaasa", localBanner:"Filhaal sirf isi device par save ho raha hai.",
+    netMonth:"Is mahine ki net kamai", earned:"Kamaya", spent:"Kharch hua", weeklyFlow:"Is hafte ka hisaab",
+    recentEntries:"Haaliya entries", loanSnapshot:"Loan ka khulaasa", viewAll:"Sab dekhein",
+    clientsTitle:"Clients", clientsSub:"Project ki details, access aur payments",
+    loansTitle:"Loans", loansSub:"Jo aapne dena hai aur jo aapko milna hai", iOwe:"Mujhe dena hai", owedMe:"Mujhe milna hai",
+    reportsTitle:"Reports", byCategory:"Category ke hisaab se kamai",
+    navDash:"Dashboard", navClients:"Clients", navLoans:"Loans", navReports:"Reports",
+    addEntry:"Entry Add Karein", income:"Income", expense:"Expense", amount:"Amount (Rs)", category:"Category",
+    linkClient:"Client se link karein (optional)", note:"Note", date:"Date", save:"Save Karein",
+    addClient:"Client Add Karein", name:"Naam", phone:"Phone", email:"Email", website:"Website", service:"Service",
+    totalPrice:"Total price (Rs)", paidSoFar:"Ab tak ada shuda (Rs)", accessNotes:"Access / handover notes",
+    addLoan:"Loan Add Karein", totalAmount:"Total amount (Rs)", addPayment:"+ Payment", delete:"Delete karein",
+    remaining:"Baaqi", noEntries:"Abhi koi entry nahi. + dabayein.", noClients:"Abhi koi client nahi. + dabayein.",
+    noLoans:"Abhi kuch nahi. + dabayein.", confirmDelete:"Kya aap ise delete karna chahte hain?",
+    catWebsite:"Website Development", catSeo:"SEO", catAds:"Google Ads", catDesign:"Graphic Design", catOther:"Doosri Service",
+    catPersonal:"Personal", catHousehold:"Ghar ka kharcha", catRestaurant:"Restaurant", catMedical:"Medical", catFees:"Fees", catBills:"Bills", catOtherExp:"Doosra",
+    fullPaid:"Puri ada shuda", halfPaid:"Kuch ada shuda", pending:"Baaqi hai", enterAmount:"Amount likhein", enterName:"Naam likhein"
+  }
+};
+let currentLang = 'en';
+const incomeCats = ['catWebsite','catSeo','catAds','catDesign','catOther'];
+const expenseCats = ['catPersonal','catHousehold','catRestaurant','catMedical','catFees','catBills','catOtherExp'];
+function t(key){ return (translations[currentLang] && translations[currentLang][key]) || translations.en[key] || key; }
+
+function applyLang(lang){
+  currentLang = lang;
+  document.querySelectorAll('[data-i18n]').forEach(el=>{ const k = el.getAttribute('data-i18n'); if(translations[lang][k]) el.textContent = translations[lang][k]; });
+  document.body.dir = lang === 'ur' ? 'rtl' : 'ltr';
+  document.body.classList.toggle('lang-ur', lang === 'ur');
+  document.querySelectorAll('.lang-switch button').forEach(b=> b.classList.toggle('active', b.getAttribute('data-lang') === lang));
+  try{ localStorage.setItem('khaata_lang', lang); }catch(e){}
+  populateCategorySelect();
+  renderAll();
+}
+document.querySelectorAll('.lang-switch button').forEach(btn=> btn.addEventListener('click', ()=> applyLang(btn.getAttribute('data-lang'))));
+try{ const saved = localStorage.getItem('khaata_lang'); if(saved && translations[saved]) currentLang = saved; }catch(e){}
+
+/* ---------------- Navigation ---------------- */
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=> b.classList.toggle('active', b.getAttribute('data-screen') === name));
+  currentScreen = name;
+}
+let currentScreen = 'dashboard';
+function openFabAction(){
+  if(currentScreen === 'clients') openModal('overlay-client');
+  else if(currentScreen === 'loans') openModal('overlay-loan', ()=> setLoanDir(loanTab));
+  else openModal('overlay-transaction');
+}
+function openModal(id, after){
+  document.getElementById(id).classList.add('active');
+  if(id==='overlay-transaction'){ document.getElementById('txDate').value = todayStr(); populateClientSelect(); }
+  if(after) after();
+}
+function closeModal(id){ document.getElementById(id).classList.remove('active'); }
+
+/* ---------------- Storage layer (db capability, falls back to localStorage) ---------------- */
+let store = null; // resolved adapter
+let usingLocal = false;
+let transactions = [], clients = [], loans = [];
+const listeners = {};
+
+function localGet(name){ try{ return JSON.parse(localStorage.getItem('khaata_'+name) || '[]'); }catch(e){ return []; } }
+function localSet(name, arr){ localStorage.setItem('khaata_'+name, JSON.stringify(arr)); }
+function uid(){ return 'id_' + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+
+function makeLocalAdapter(){
+  return {
+    subscribe(name, cb){
+      listeners[name] = cb;
+      cb(localGet(name));
+    },
+    async add(name, data){
+      const arr = localGet(name);
+      const doc = {id: uid(), ...data};
+      arr.push(doc);
+      localSet(name, arr);
+      if(listeners[name]) listeners[name](arr);
+      return doc;
+    },
+    async update(name, id, data){
+      const arr = localGet(name).map(d => d.id === id ? {...d, ...data} : d);
+      localSet(name, arr);
+      if(listeners[name]) listeners[name](arr);
+    },
+    async remove(name, id){
+      const arr = localGet(name).filter(d => d.id !== id);
+      localSet(name, arr);
+      if(listeners[name]) listeners[name](arr);
+    }
+  };
+}
+
+function makeDbAdapter(db){
+  return {
+    subscribe(name, cb){
+      db.collection(name).onSnapshot(snap=>{
+        const arr = snap.docs.map(d=>({id:d.id, ...d.data()}));
+        cb(arr);
+      }, err=>{
+        console.error('db error', name, err);
+      });
+    },
+    async add(name, data){
+      const ref = await db.collection(name).add(data);
+      return {id: ref.id, ...data};
+    },
+    async update(name, id, data){
+      await db.collection(name).doc(id).update(data);
+    },
+    async remove(name, id){
+      await db.collection(name).doc(id).delete();
+    }
+  };
+}
+
+async function initStorage(){
+  let dbCap = null;
+  try{ dbCap = await claude.use('db'); }catch(e){ dbCap = null; }
+  if(dbCap){
+    store = makeDbAdapter(dbCap);
+    usingLocal = false;
+    document.getElementById('syncDot').classList.remove('local');
+    document.getElementById('syncLabel').textContent = t('synced');
+    document.getElementById('syncLabel').setAttribute('data-i18n','synced');
+    document.getElementById('localBanner').style.display = 'none';
+  } else {
+    store = makeLocalAdapter();
+    usingLocal = true;
+    document.getElementById('syncDot').classList.add('local');
+    document.getElementById('syncLabel').textContent = t('localOnly');
+    document.getElementById('syncLabel').setAttribute('data-i18n','localOnly');
+    document.getElementById('localBanner').style.display = 'block';
+  }
+  store.subscribe('transactions', arr => { transactions = arr; renderAll(); });
+  store.subscribe('clients', arr => { clients = arr; renderAll(); });
+  store.subscribe('loans', arr => { loans = arr; renderAll(); });
+}
+
+/* ---------------- Date helpers ---------------- */
+function todayStr(){ return new Date().toLocaleDateString('sv-SE'); }
+function daysAgoStr(n){ const d = new Date(); d.setDate(d.getDate()-n); return d.toLocaleDateString('sv-SE'); }
+function monthKey(dateStr){ return dateStr ? dateStr.slice(0,7) : ''; }
+function fmt(n){ n = Number(n)||0; return n.toLocaleString('en-US'); }
+
+/* ---------------- Category select population ---------------- */
+function populateCategorySelect(){
+  const sel = document.getElementById('txCategory');
+  const type = document.querySelector('#txTypeSeg button.active').getAttribute('data-val');
+  const cats = type === 'income' ? incomeCats : expenseCats;
+  sel.innerHTML = cats.map(c=>`<option value="${c}">${t(c)}</option>`).join('');
+  document.getElementById('txClientField').style.display = type === 'income' ? 'block' : 'none';
+  const svcSel = document.getElementById('clService');
+  if(svcSel) svcSel.innerHTML = incomeCats.map(c=>`<option value="${c}">${t(c)}</option>`).join('');
+}
+function setTxType(type){
+  document.querySelectorAll('#txTypeSeg button').forEach(b=>{
+    b.classList.toggle('active', b.getAttribute('data-val') === type);
+  });
+  populateCategorySelect();
+}
+document.getElementById('txTypeSeg').addEventListener('click', ()=>{});
+function populateClientSelect(){
+  const sel = document.getElementById('txClient');
+  sel.innerHTML = '<option value="">—</option>' + clients.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+}
+
+/* ---------------- Save handlers ---------------- */
+async function saveTransaction(){
+  const type = document.querySelector('#txTypeSeg button.active').getAttribute('data-val');
+  const amount = parseFloat(document.getElementById('txAmount').value);
+  if(!amount || amount <= 0){ alert(t('enterAmount')); return; }
+  const category = document.getElementById('txCategory').value;
+  const clientId = document.getElementById('txClient').value || null;
+  const note = document.getElementById('txNote').value.trim();
+  const date = document.getElementById('txDate').value || todayStr();
+  await store.add('transactions', {type, amount, category, clientId, note, date, createdAt: Date.now()});
+  document.getElementById('txAmount').value=''; document.getElementById('txNote').value='';
+  closeModal('overlay-transaction');
+}
+
+let loanTab = 'iOwe';
+function setLoanTab(dir){
+  loanTab = dir;
+  document.getElementById('tab-iOwe').classList.toggle('active', dir==='iOwe');
+  document.getElementById('tab-owedToMe').classList.toggle('active', dir==='owedToMe');
+  renderLoans();
+}
+function setLoanDir(dir){
+  document.querySelectorAll('#loanDirSeg button').forEach(b=> b.classList.toggle('active', b.getAttribute('data-val')===dir));
+  loanDirSelected = dir;
+}
+let loanDirSelected = 'iOwe';
+
+async function saveClient(){
+  const name = document.getElementById('clName').value.trim();
+  if(!name){ alert(t('enterName')); return; }
+  const data = {
+    name, phone: document.getElementById('clPhone').value.trim(),
+    email: document.getElementById('clEmail').value.trim(),
+    website: document.getElementById('clWebsite').value.trim(),
+    service: document.getElementById('clService').value,
+    price: parseFloat(document.getElementById('clPrice').value)||0,
+    paid: parseFloat(document.getElementById('clPaid').value)||0,
+    access: document.getElementById('clAccess').value.trim(),
+    createdAt: Date.now()
+  };
+  await store.add('clients', data);
+  ['clName','clPhone','clEmail','clWebsite','clPrice','clAccess'].forEach(id=> document.getElementById(id).value='');
+  document.getElementById('clPaid').value='0';
+  closeModal('overlay-client');
+}
+async function addClientPayment(id){
+  const c = clients.find(x=>x.id===id); if(!c) return;
+  const amt = parseFloat(prompt(t('addPayment')+' (Rs)')||'');
+  if(!amt || amt<=0) return;
+  await store.update('clients', id, {paid: (c.paid||0) + amt});
+}
+async function deleteClient(id){ if(confirm(t('confirmDelete'))) await store.remove('clients', id); }
+
+async function saveLoan(){
+  const name = document.getElementById('lnName').value.trim();
+  if(!name){ alert(t('enterName')); return; }
+  const data = {
+    name, phone: document.getElementById('lnPhone').value.trim(),
+    direction: loanDirSelected,
+    total: parseFloat(document.getElementById('lnTotal').value)||0,
+    paid: parseFloat(document.getElementById('lnPaid').value)||0,
+    createdAt: Date.now()
+  };
+  await store.add('loans', data);
+  ['lnName','lnPhone','lnTotal'].forEach(id=> document.getElementById(id).value='');
+  document.getElementById('lnPaid').value='0';
+  closeModal('overlay-loan');
+}
+async function addLoanPayment(id){
+  const l = loans.find(x=>x.id===id); if(!l) return;
+  const amt = parseFloat(prompt(t('addPayment')+' (Rs)')||'');
+  if(!amt || amt<=0) return;
+  await store.update('loans', id, {paid: (l.paid||0) + amt});
+}
+async function deleteLoan(id){ if(confirm(t('confirmDelete'))) await store.remove('loans', id); }
+
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+/* ---------------- Rendering ---------------- */
+function renderAll(){
+  renderDashboard();
+  renderClients();
+  renderLoans();
+  renderReports();
+}
+
+function sumByDateRange(type, start, end){
+  return transactions.filter(t=>t.type===type && t.date>=start && t.date<=end).reduce((s,t)=>s+(Number(t.amount)||0),0);
+}
+
+function renderDashboard(){
+  document.getElementById('todayDate').textContent = new Date().toLocaleDateString(currentLang==='ur'?'ur-PK':'en-GB', {weekday:'long', day:'numeric', month:'long'});
+  const monthStart = todayStr().slice(0,7)+'-01';
+  const monthEnd = todayStr();
+  const earn = sumByDateRange('income', monthStart, monthEnd);
+  const spend = sumByDateRange('expense', monthStart, monthEnd);
+  const net = earn - spend;
+  const netEl = document.getElementById('monthNet');
+  netEl.className = 'hero-figure ' + (net>=0?'pos':'neg');
+  netEl.innerHTML = `<span class="cur">Rs</span><span class="num">${fmt(net)}</span>`;
+  document.getElementById('monthEarn').textContent = fmt(earn);
+  document.getElementById('monthSpend').textContent = fmt(spend);
+
+  // weekly bar chart (last 7 days)
+  const bars = document.getElementById('bars'); const dayLabels = document.getElementById('daylabels');
+  bars.innerHTML=''; dayLabels.innerHTML='';
+  const days = []; for(let i=6;i>=0;i--) days.push(daysAgoStr(i));
+  const dayData = days.map(d=>({earn: sumByDateRange('income',d,d), spend: sumByDateRange('expense',d,d)}));
+  const max = Math.max(1, ...dayData.map(d=>Math.max(d.earn,d.spend)));
+  const groupW = 320/7, barW=8;
+  dayData.forEach((d,i)=>{
+    const cx = i*groupW + groupW/2;
+    const eh = (d.earn/max)*100, sh=(d.spend/max)*100;
+    bars.innerHTML += `<rect x="${cx-barW-2}" y="${110-eh}" width="${barW}" height="${eh}" rx="2" fill="var(--teal)"/>`;
+    bars.innerHTML += `<rect x="${cx+2}" y="${110-sh}" width="${barW}" height="${sh}" rx="2" fill="var(--coral)"/>`;
+    const lbl = new Date(days[i]).toLocaleDateString('en-GB',{weekday:'short'}).slice(0,2);
+    dayLabels.innerHTML += `<text x="${cx}" y="128" text-anchor="middle">${lbl}</text>`;
+  });
+
+  // recent entries
+  const recent = [...transactions].sort((a,b)=> (b.date+b.createdAt).localeCompare(a.date+a.createdAt)).slice(0,6);
+  const recentList = document.getElementById('recentList');
+  if(recent.length===0){ recentList.innerHTML = `<div class="empty-note">${t('noEntries')}</div>`; }
+  else recentList.innerHTML = recent.map(tr=>{
+    const isIncome = tr.type==='income';
+    return `<div class="row-item">
+      <div class="row-left"><div class="avatar">${isIncome?'↑':'↓'}</div>
+        <div><div class="row-name">${tr.note ? escapeHtml(tr.note) : t(tr.category)}</div><div class="row-sub">${tr.date}</div></div>
+      </div>
+      <div class="row-amt ${isIncome?'pos':'neg'} num">${isIncome?'+':'-'}${fmt(tr.amount)}</div>
+    </div>`;
+  }).join('');
+
+  // loan snapshot (top 3 by remaining)
+  const withRemaining = loans.map(l=>({...l, remaining: (l.total||0)-(l.paid||0)})).filter(l=>l.remaining>0).sort((a,b)=>b.remaining-a.remaining).slice(0,3);
+  const snap = document.getElementById('loanSnapshotList');
+  if(withRemaining.length===0){ snap.innerHTML = `<div class="empty-note">${t('noLoans')}</div>`; }
+  else snap.innerHTML = withRemaining.map(l=>`
+    <div class="row-item">
+      <div class="row-left"><div class="avatar">${(l.name||'?')[0].toUpperCase()}</div>
+        <div><div class="row-name">${escapeHtml(l.name)}</div><span class="pill-tag ${l.direction==='iOwe'?'owe':'due'}">${l.direction==='iOwe'?t('iOwe'):t('owedMe')}</span></div>
+      </div>
+      <div class="row-amt ${l.direction==='iOwe'?'neg':'pos'} num">${fmt(l.remaining)}</div>
+    </div>`).join('');
+}
+
+function renderClients(){
+  const list = document.getElementById('clientsList');
+  if(clients.length===0){ list.innerHTML = `<div class="empty-note">${t('noClients')}</div>`; return; }
+  list.innerHTML = [...clients].sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)).map(c=>{
+    const price = c.price||0, paid = c.paid||0;
+    const pct = price>0 ? Math.min(100, Math.round(paid/price*100)) : 0;
+    const status = pct>=100 ? t('fullPaid') : pct>0 ? t('halfPaid') : t('pending');
+    const statusClass = pct>=100 ? 'done' : pct>0 ? 'owe' : 'due';
+    return `<div class="client-card">
+      <div class="client-top">
+        <div><div class="client-name">${escapeHtml(c.name)}</div><div class="client-service">${t(c.service)||''}</div></div>
+        <div class="client-price"><div class="v num">Rs ${fmt(price)}</div><span class="pill-tag ${statusClass}">${status}</span></div>
+      </div>
+      <div class="client-meta">
+        ${c.phone?`<span>📞 ${escapeHtml(c.phone)}</span>`:''}
+        ${c.email?`<span>✉️ ${escapeHtml(c.email)}</span>`:''}
+        ${c.website?`<span>🌐 ${escapeHtml(c.website)}</span>`:''}
+      </div>
+      ${c.access?`<div class="row-sub" style="margin-top:8px;white-space:pre-wrap;">${escapeHtml(c.access)}</div>`:''}
+      <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+      <div class="client-actions">
+        <button class="btn-sm" onclick="addClientPayment('${c.id}')">${t('addPayment')}</button>
+        <button class="btn-sm danger" onclick="deleteClient('${c.id}')">${t('delete')}</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderLoans(){
+  const filtered = loans.filter(l=>l.direction===loanTab);
+  const list = document.getElementById('loansList');
+  if(filtered.length===0){ list.innerHTML = `<div class="empty-note">${t('noLoans')}</div>`; return; }
+  list.innerHTML = `<div class="list-card">` + filtered.map(l=>{
+    const remaining = (l.total||0)-(l.paid||0);
+    return `<div class="row-item">
+      <div class="row-left"><div class="avatar">${(l.name||'?')[0].toUpperCase()}</div>
+        <div><div class="row-name">${escapeHtml(l.name)}</div><div class="row-sub">${l.phone?('📞 '+escapeHtml(l.phone)):''}</div>
+          <div class="row-sub">${t('paidSoFar')}: <span class="num">${fmt(l.paid||0)}</span> · ${t('remaining')}: <span class="num">${fmt(remaining)}</span></div>
+        </div>
+      </div>
+      <div class="row-actions">
+        <button class="icon-btn" onclick="addLoanPayment('${l.id}')" title="${t('addPayment')}">+</button>
+        <button class="icon-btn" onclick="deleteLoan('${l.id}')" title="${t('delete')}">✕</button>
+      </div>
+    </div>`;
+  }).join('') + `</div>`;
+}
+
+function renderReports(){
+  const now = new Date();
+  document.getElementById('reportMonthLabel').textContent = now.toLocaleDateString(currentLang==='ur'?'ur-PK':'en-GB', {month:'long', year:'numeric'});
+  // last 14 days line chart
+  const days = []; for(let i=13;i>=0;i--) days.push(daysAgoStr(i));
+  const earnPts = days.map(d=>sumByDateRange('income',d,d));
+  const spendPts = days.map(d=>sumByDateRange('expense',d,d));
+  const w=320,h=150,pad=14;
+  const max = Math.max(1, ...earnPts, ...spendPts);
+  const toPath = arr => arr.map((v,i)=>{ const x=pad+(i/(arr.length-1))*(w-2*pad); const y=h-pad-(v/max)*(h-2*pad); return (i===0?'M':'L')+x.toFixed(1)+','+y.toFixed(1); }).join(' ');
+  document.getElementById('linechart').innerHTML = `
+    <path d="${toPath(earnPts)}" fill="none" stroke="var(--teal)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="${toPath(spendPts)}" fill="none" stroke="var(--coral)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+
+  // category breakdown (income, current month)
+  const monthStart = todayStr().slice(0,7)+'-01', monthEnd = todayStr();
+  const byCat = {};
+  transactions.filter(t=>t.type==='income' && t.date>=monthStart && t.date<=monthEnd).forEach(t=>{
+    byCat[t.category] = (byCat[t.category]||0) + (Number(t.amount)||0);
+  });
+  const entries = Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
+  const catList = document.getElementById('categoryList');
+  if(entries.length===0){ catList.innerHTML = `<div class="empty-note">${t('noEntries')}</div>`; }
+  else catList.innerHTML = entries.map(([cat,amt])=>`
+    <div class="row-item"><div class="row-left"><div class="avatar">₨</div><div class="row-name">${t(cat)}</div></div><div class="row-amt num">${fmt(amt)}</div></div>
+  `).join('');
+}
+
+/* ---------------- Init ---------------- */
+populateCategorySelect();
+applyLang(currentLang);
+initStorage();
+</script>
+</body>
+</html>
