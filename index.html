@@ -87,6 +87,11 @@
   .chip.active{ background:var(--gold); color:#14110a; border-color:var(--gold); }
   .total-line{ font-size:11px; color:var(--muted); margin-bottom:14px; }
   .total-line b{ color:var(--text); }
+  .search-box{ position:relative; margin-bottom:12px; }
+  .search-box input{ width:100%; background:var(--surface-2); border:1px solid var(--line); color:var(--text); padding:10px 14px 10px 34px; border-radius:12px; font-size:13px; font-family:inherit; }
+  .search-box::before{ content:'🔍'; position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:12px; opacity:0.6; }
+  body[dir="rtl"] .search-box input{ padding:10px 34px 10px 14px; }
+  body[dir="rtl"] .search-box::before{ left:auto; right:12px; }
 
   .client-card{ background: var(--surface-2); border:1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
   .client-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:8px;}
@@ -211,6 +216,7 @@
     <div class="screen" id="screen-clients">
       <h2 class="page-title" data-i18n="clientsTitle">Clients</h2>
       <div class="total-line" id="clientsTotalLine"></div>
+      <div class="search-box"><input type="text" id="clientSearch" oninput="renderClients()" data-i18n-placeholder="searchClients" placeholder="Search name, phone or email…"></div>
       <div class="chip-row" id="clientCategoryFilter"></div>
       <div id="clientsList"></div>
     </div>
@@ -219,11 +225,20 @@
     <div class="screen" id="screen-loans">
       <h2 class="page-title" data-i18n="loansTitle">Loans</h2>
       <p class="page-sub" data-i18n="loansSub">What you owe &amp; what's owed to you</p>
+      <div class="search-box"><input type="text" id="loanSearch" oninput="renderLoans()" data-i18n-placeholder="searchLoans" placeholder="Search name or phone…"></div>
       <div class="tab-toggle">
         <button class="active" id="tab-iOwe" onclick="setLoanTab('iOwe')" data-i18n="iOwe">I owe</button>
         <button id="tab-owedToMe" onclick="setLoanTab('owedToMe')" data-i18n="owedMe">Owed to me</button>
       </div>
       <div id="loansList"></div>
+    </div>
+
+    <!-- PASSWORDS / VAULT -->
+    <div class="screen" id="screen-vault">
+      <h2 class="page-title" data-i18n="vaultTitle">Logins &amp; Passwords</h2>
+      <p class="page-sub" data-i18n="vaultSub">Website or app logins you want to keep handy</p>
+      <div class="search-box"><input type="text" id="vaultSearch" oninput="renderVault()" data-i18n-placeholder="searchVault" placeholder="Search site or username…"></div>
+      <div id="vaultList"></div>
     </div>
 
     <!-- REPORTS -->
@@ -263,6 +278,10 @@
     <button class="nav-btn" data-screen="reports" onclick="showScreen('reports')">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M11 20V4M18 20v-7"/></svg>
       <span data-i18n="navReports">Reports</span>
+    </button>
+    <button class="nav-btn" data-screen="vault" onclick="showScreen('vault')">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="15" r="4"/><path d="M11.5 11.5L19 4M19 4h-4.5M19 4v4.5"/></svg>
+      <span data-i18n="navVault">Passwords</span>
     </button>
   </div>
 </div>
