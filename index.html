@@ -162,6 +162,7 @@
       <div class="brand-sub"><span class="sync-dot" id="syncDot"></span><span id="syncLabel" data-i18n="syncing">Syncing…</span></div>
     </div>
     <div class="topbar-right">
+      <button class="reset-btn" onclick="openBackendModal()" title="Connect Google Sheets backup">🔗</button>
       <button class="reset-btn" onclick="confirmRestart()" title="Restart / reset all data">⟳</button>
       <div class="lang-switch">
         <button data-lang="en" class="active">EN</button>
@@ -327,6 +328,14 @@
   <button class="save-btn" onclick="downloadReport()" data-i18n="generatePdf">Generate PDF</button>
 </div></div>
 
+<div class="overlay" id="overlay-backend"><div class="sheet">
+  <div class="sheet-head"><div class="sheet-title" data-i18n="connectBackend">Connect Google Sheets Backup</div><button class="sheet-close" onclick="closeModal('overlay-backend')">✕</button></div>
+  <p class="page-sub" data-i18n="connectHint" style="margin-bottom:16px;">Paste the Web App URL from your Apps Script deployment. This makes your data sync across devices and enables the automatic email report.</p>
+  <div class="field"><label data-i18n="scriptUrl">Apps Script Web App URL</label><input type="text" id="sheetsUrlInput" placeholder="https://script.google.com/macros/s/xxxx/exec"></div>
+  <button class="save-btn" onclick="saveBackendUrl()" data-i18n="connect">Connect</button>
+  <button class="btn-sm danger" style="width:100%; margin-top:10px; padding:10px;" onclick="disconnectBackend()" data-i18n="disconnect">Disconnect (use local storage instead)</button>
+</div></div>
+
 <div id="printArea"></div>
 
 <script>
@@ -356,7 +365,10 @@ const translations = {
     all:"All", totalClients:"Total Clients",
     downloadReport:"Download Audit Report (PDF)", auditReport:"Audit Report", selectRange:"Select range",
     rToday:"Today", r3d:"3 Days", r4d:"4 Days", rWeek:"This Week", rMonth:"This Month", rCustom:"Custom",
-    fromDate:"From", toDate:"To", generatePdf:"Generate PDF"
+    fromDate:"From", toDate:"To", generatePdf:"Generate PDF",
+    syncedSheets:"Synced via Google Sheets", connectBackend:"Connect Google Sheets Backup",
+    connectHint:"Paste the Web App URL from your Apps Script deployment. This makes your data sync across devices and enables the automatic email report.",
+    scriptUrl:"Apps Script Web App URL", connect:"Connect", disconnect:"Disconnect (use local storage instead)"
   },
   ur: { syncing:"سِنک ہو رہا ہے…", synced:"آپ کے اکاؤنٹ سے محفوظ", localOnly:"صرف اسی ڈیوائس پر",
     dashTitle:"آج کا خلاصہ", localBanner:"فی الحال صرف اسی ڈیوائس پر محفوظ ہو رہا ہے۔",
@@ -382,7 +394,10 @@ const translations = {
     all:"سب", totalClients:"کل کلائنٹس",
     downloadReport:"آڈٹ رپورٹ ڈاؤن لوڈ کریں (PDF)", auditReport:"آڈٹ رپورٹ", selectRange:"دورانیہ منتخب کریں",
     rToday:"آج", r3d:"3 دن", r4d:"4 دن", rWeek:"اس ہفتے", rMonth:"اس ماہ", rCustom:"اپنی مرضی سے",
-    fromDate:"سے", toDate:"تک", generatePdf:"PDF بنائیں"
+    fromDate:"سے", toDate:"تک", generatePdf:"PDF بنائیں",
+    syncedSheets:"گوگل شیٹس کے ذریعے سِنک", connectBackend:"گوگل شیٹس بیک اپ کنیکٹ کریں",
+    connectHint:"اپنے Apps Script ڈیپلائمنٹ کا Web App URL یہاں پیسٹ کریں۔ اس سے آپ کا ڈیٹا تمام ڈیوائسز پر سِنک ہوگا اور خودکار ای میل رپورٹ بھی فعال ہو جائے گی۔",
+    scriptUrl:"Apps Script Web App URL", connect:"کنیکٹ کریں", disconnect:"ڈسکنیکٹ کریں (صرف اسی ڈیوائس پر رکھیں)"
   },
   roman: { syncing:"Sync ho raha hai…", synced:"Aapke account mein save ho raha hai", localOnly:"Sirf isi device par",
     dashTitle:"Aaj ka Khulaasa", localBanner:"Filhaal sirf isi device par save ho raha hai.",
@@ -408,7 +423,10 @@ const translations = {
     all:"Sab", totalClients:"Total Clients",
     downloadReport:"Audit Report Download Karein (PDF)", auditReport:"Audit Report", selectRange:"Range chunein",
     rToday:"Aaj", r3d:"3 Din", r4d:"4 Din", rWeek:"Is Hafte", rMonth:"Is Mahine", rCustom:"Custom",
-    fromDate:"Se", toDate:"Tak", generatePdf:"PDF Banayein"
+    fromDate:"Se", toDate:"Tak", generatePdf:"PDF Banayein",
+    syncedSheets:"Google Sheets ke zariye sync", connectBackend:"Google Sheets Backup Connect Karein",
+    connectHint:"Apne Apps Script deployment ka Web App URL yahan paste karein. Isse aapka data sab devices par sync hoga aur automatic email report bhi shuru ho jayegi.",
+    scriptUrl:"Apps Script Web App URL", connect:"Connect Karein", disconnect:"Disconnect Karein (sirf isi device par rakhein)"
   }
 };
 let currentLang = 'en';
@@ -505,7 +523,66 @@ function makeDbAdapter(db){
   };
 }
 
+function makeSheetsAdapter(baseUrl){
+  const cbs = {};
+  async function list(name){
+    const res = await fetch(baseUrl + '?action=list&collection=' + encodeURIComponent(name));
+    if(!res.ok) throw new Error('http ' + res.status);
+    return await res.json();
+  }
+  async function refresh(name){
+    try{ const data = await list(name); if(cbs[name]) cbs[name](data); }
+    catch(e){ console.error('sheets refresh error', name, e); }
+  }
+  async function post(body){
+    const res = await fetch(baseUrl, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(body)});
+    return await res.json();
+  }
+  return {
+    subscribe(name, cb){
+      cbs[name] = cb;
+      refresh(name);
+      setInterval(()=> refresh(name), 8000);
+    },
+    async add(name, data){ const r = await post({action:'add', collection:name, data}); await refresh(name); return r; },
+    async update(name, id, data){ const r = await post({action:'update', collection:name, id, data}); await refresh(name); return r; },
+    async set(name, id, data){ const r = await post({action:'set', collection:name, id, data}); await refresh(name); return r; },
+    async remove(name, id){ const r = await post({action:'remove', collection:name, id}); await refresh(name); return r; }
+  };
+}
+
+function openBackendModal(){
+  document.getElementById('sheetsUrlInput').value = localStorage.getItem('khaata_sheets_url') || '';
+  openModal('overlay-backend');
+}
+function saveBackendUrl(){
+  const url = document.getElementById('sheetsUrlInput').value.trim();
+  if(!url || !url.startsWith('https://script.google.com/')){ alert('Please paste a valid Apps Script Web App URL (starts with https://script.google.com/)'); return; }
+  localStorage.setItem('khaata_sheets_url', url);
+  closeModal('overlay-backend');
+  location.reload();
+}
+function disconnectBackend(){
+  localStorage.removeItem('khaata_sheets_url');
+  closeModal('overlay-backend');
+  location.reload();
+}
+
 async function initStorage(){
+  const sheetsUrl = localStorage.getItem('khaata_sheets_url');
+  if(sheetsUrl){
+    store = makeSheetsAdapter(sheetsUrl);
+    usingLocal = false;
+    document.getElementById('syncDot').classList.remove('local');
+    document.getElementById('syncLabel').textContent = t('syncedSheets');
+    document.getElementById('syncLabel').setAttribute('data-i18n','syncedSheets');
+    document.getElementById('localBanner').style.display = 'none';
+    store.subscribe('transactions', arr => { transactions = arr; renderAll(); });
+    store.subscribe('clients', arr => { clients = arr; renderAll(); });
+    store.subscribe('loans', arr => { loans = arr; renderAll(); });
+    store.subscribe('settings', arr => { settings = arr; applyProfileName(); });
+    return;
+  }
   let dbCap = null;
   try{ dbCap = await claude.use('db'); }catch(e){ dbCap = null; }
   if(dbCap){
