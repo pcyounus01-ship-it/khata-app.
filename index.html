@@ -315,7 +315,7 @@
 </div></div>
 
 <div class="overlay" id="overlay-loan"><div class="sheet">
-  <div class="sheet-head"><div class="sheet-title" data-i18n="addLoan">Add Loan</div><button class="sheet-close" onclick="closeModal('overlay-loan')">✕</button></div>
+  <div class="sheet-head"><div class="sheet-title" id="loanSheetTitle" data-i18n="addLoan">Add Loan</div><button class="sheet-close" onclick="closeModal('overlay-loan')">✕</button></div>
   <div class="seg" id="loanDirSeg">
     <button class="active iOwe" data-val="iOwe" onclick="setLoanDir('iOwe')" data-i18n="iOwe">I owe</button>
     <button class="owedToMe" data-val="owedToMe" onclick="setLoanDir('owedToMe')" data-i18n="owedMe">Owed to me</button>
@@ -355,6 +355,15 @@
   <button class="btn-sm danger" style="width:100%; margin-top:10px; padding:10px;" onclick="disconnectBackend()" data-i18n="disconnect">Disconnect (use local storage instead)</button>
 </div></div>
 
+<div class="overlay" id="overlay-vault"><div class="sheet">
+  <div class="sheet-head"><div class="sheet-title" id="vaultSheetTitle" data-i18n="addCredential">Add Login</div><button class="sheet-close" onclick="closeModal('overlay-vault')">✕</button></div>
+  <div class="field"><label data-i18n="websiteName">Website / App Name</label><input type="text" id="vWebsite" placeholder="Facebook, Instagram, Gmail…"></div>
+  <div class="field"><label data-i18n="usernameLabel">Username / Email</label><input type="text" id="vUsername"></div>
+  <div class="field"><label data-i18n="passwordLabel">Password</label><input type="text" id="vPassword"></div>
+  <div class="field"><label data-i18n="note">Note</label><textarea id="vNote" placeholder="Optional"></textarea></div>
+  <button class="save-btn" onclick="saveVault()" data-i18n="save">Save</button>
+</div></div>
+
 <div id="printArea"></div>
 
 <script>
@@ -387,7 +396,12 @@ const translations = {
     fromDate:"From", toDate:"To", generatePdf:"Generate PDF",
     syncedSheets:"Synced via Google Sheets", connectBackend:"Connect Google Sheets Backup",
     connectHint:"Paste the Web App URL from your Apps Script deployment. This makes your data sync across devices and enables the automatic email report.",
-    scriptUrl:"Apps Script Web App URL", connect:"Connect", disconnect:"Disconnect (use local storage instead)"
+    scriptUrl:"Apps Script Web App URL", connect:"Connect", disconnect:"Disconnect (use local storage instead)",
+    searchClients:"Search name, phone or email…", searchLoans:"Search name or phone…", searchVault:"Search site or username…",
+    navVault:"Passwords", vaultTitle:"Logins & Passwords", vaultSub:"Website or app logins you want to keep handy",
+    addCredential:"Add Login", editCredential:"Edit Login", websiteName:"Website / App Name", usernameLabel:"Username / Email",
+    passwordLabel:"Password", noCredentials:"No saved logins yet. Tap + to add one.",
+    editLoan:"Edit Loan", hide:"Hide", reveal:"Reveal", copy:"Copy"
   },
   ur: { syncing:"سِنک ہو رہا ہے…", synced:"آپ کے اکاؤنٹ سے محفوظ", localOnly:"صرف اسی ڈیوائس پر",
     dashTitle:"آج کا خلاصہ", localBanner:"فی الحال صرف اسی ڈیوائس پر محفوظ ہو رہا ہے۔",
@@ -416,7 +430,12 @@ const translations = {
     fromDate:"سے", toDate:"تک", generatePdf:"PDF بنائیں",
     syncedSheets:"گوگل شیٹس کے ذریعے سِنک", connectBackend:"گوگل شیٹس بیک اپ کنیکٹ کریں",
     connectHint:"اپنے Apps Script ڈیپلائمنٹ کا Web App URL یہاں پیسٹ کریں۔ اس سے آپ کا ڈیٹا تمام ڈیوائسز پر سِنک ہوگا اور خودکار ای میل رپورٹ بھی فعال ہو جائے گی۔",
-    scriptUrl:"Apps Script Web App URL", connect:"کنیکٹ کریں", disconnect:"ڈسکنیکٹ کریں (صرف اسی ڈیوائس پر رکھیں)"
+    scriptUrl:"Apps Script Web App URL", connect:"کنیکٹ کریں", disconnect:"ڈسکنیکٹ کریں (صرف اسی ڈیوائس پر رکھیں)",
+    searchClients:"نام، فون یا ای میل سرچ کریں…", searchLoans:"نام یا فون سرچ کریں…", searchVault:"سائٹ یا یوزرنیم سرچ کریں…",
+    navVault:"پاس ورڈز", vaultTitle:"لاگ اِنز اور پاس ورڈز", vaultSub:"وہ ویب سائٹ یا ایپ لاگ اِنز جو آپ محفوظ رکھنا چاہتے ہیں",
+    addCredential:"لاگ اِن شامل کریں", editCredential:"لاگ اِن میں ترمیم", websiteName:"ویب سائٹ / ایپ کا نام", usernameLabel:"یوزرنیم / ای میل",
+    passwordLabel:"پاس ورڈ", noCredentials:"ابھی کوئی لاگ اِن محفوظ نہیں۔ + دبائیں۔",
+    editLoan:"قرض میں ترمیم", hide:"چھپائیں", reveal:"دکھائیں", copy:"کاپی کریں"
   },
   roman: { syncing:"Sync ho raha hai…", synced:"Aapke account mein save ho raha hai", localOnly:"Sirf isi device par",
     dashTitle:"Aaj ka Khulaasa", localBanner:"Filhaal sirf isi device par save ho raha hai.",
@@ -445,7 +464,12 @@ const translations = {
     fromDate:"Se", toDate:"Tak", generatePdf:"PDF Banayein",
     syncedSheets:"Google Sheets ke zariye sync", connectBackend:"Google Sheets Backup Connect Karein",
     connectHint:"Apne Apps Script deployment ka Web App URL yahan paste karein. Isse aapka data sab devices par sync hoga aur automatic email report bhi shuru ho jayegi.",
-    scriptUrl:"Apps Script Web App URL", connect:"Connect Karein", disconnect:"Disconnect Karein (sirf isi device par rakhein)"
+    scriptUrl:"Apps Script Web App URL", connect:"Connect Karein", disconnect:"Disconnect Karein (sirf isi device par rakhein)",
+    searchClients:"Naam, phone ya email search karein…", searchLoans:"Naam ya phone search karein…", searchVault:"Site ya username search karein…",
+    navVault:"Passwords", vaultTitle:"Logins aur Passwords", vaultSub:"Website ya app ke logins jo aap mehfooz rakhna chahte hain",
+    addCredential:"Login Add Karein", editCredential:"Login Edit Karein", websiteName:"Website / App ka Naam", usernameLabel:"Username / Email",
+    passwordLabel:"Password", noCredentials:"Abhi koi login save nahi. + dabayein.",
+    editLoan:"Loan Edit Karein", hide:"Chupayein", reveal:"Dikhayein", copy:"Copy Karein"
   }
 };
 let currentLang = 'en';
@@ -456,6 +480,7 @@ function t(key){ return (translations[currentLang] && translations[currentLang][
 function applyLang(lang){
   currentLang = lang;
   document.querySelectorAll('[data-i18n]').forEach(el=>{ const k = el.getAttribute('data-i18n'); if(translations[lang][k]) el.textContent = translations[lang][k]; });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{ const k = el.getAttribute('data-i18n-placeholder'); if(translations[lang][k]) el.placeholder = translations[lang][k]; });
   document.body.dir = lang === 'ur' ? 'rtl' : 'ltr';
   document.body.classList.toggle('lang-ur', lang === 'ur');
   document.querySelectorAll('.lang-switch button').forEach(b=> b.classList.toggle('active', b.getAttribute('data-lang') === lang));
@@ -476,7 +501,8 @@ function showScreen(name){
 let currentScreen = 'dashboard';
 function openFabAction(){
   if(currentScreen === 'clients') openAddClient();
-  else if(currentScreen === 'loans') openModal('overlay-loan', ()=> setLoanDir(loanTab));
+  else if(currentScreen === 'loans') openAddLoan();
+  else if(currentScreen === 'vault') openAddVault();
   else openModal('overlay-transaction');
 }
 function openModal(id, after){
@@ -489,7 +515,7 @@ function closeModal(id){ document.getElementById(id).classList.remove('active');
 /* ---------------- Storage layer (db capability, falls back to localStorage) ---------------- */
 let store = null;
 let usingLocal = false;
-let transactions = [], clients = [], loans = [], settings = [];
+let transactions = [], clients = [], loans = [], settings = [], vaults = [];
 const listeners = {};
 
 function localGet(name){ try{ return JSON.parse(localStorage.getItem('khaata_'+name) || '[]'); }catch(e){ return []; } }
@@ -600,6 +626,7 @@ async function initStorage(){
     store.subscribe('clients', arr => { clients = arr; renderAll(); });
     store.subscribe('loans', arr => { loans = arr; renderAll(); });
     store.subscribe('settings', arr => { settings = arr; applyProfileName(); });
+    store.subscribe('vaults', arr => { vaults = arr; renderVault(); });
     return;
   }
   let dbCap = null;
@@ -623,6 +650,7 @@ async function initStorage(){
   store.subscribe('clients', arr => { clients = arr; renderAll(); });
   store.subscribe('loans', arr => { loans = arr; renderAll(); });
   store.subscribe('settings', arr => { settings = arr; applyProfileName(); });
+  store.subscribe('vaults', arr => { vaults = arr; renderVault(); });
 }
 
 /* ---------------- Date helpers ---------------- */
@@ -692,9 +720,34 @@ function setLoanTab(dir){
   renderLoans();
 }
 let loanDirSelected = 'iOwe';
+let editingLoanId = null;
 function setLoanDir(dir){
   document.querySelectorAll('#loanDirSeg button').forEach(b=> b.classList.toggle('active', b.getAttribute('data-val')===dir));
   loanDirSelected = dir;
+}
+function clearLoanForm(){
+  ['lnName','lnPhone','lnTotal'].forEach(id=> document.getElementById(id).value='');
+  document.getElementById('lnPaid').value='0';
+}
+function openAddLoan(){
+  editingLoanId = null;
+  clearLoanForm();
+  setLoanDir(loanTab);
+  const titleEl = document.getElementById('loanSheetTitle');
+  titleEl.setAttribute('data-i18n','addLoan'); titleEl.textContent = t('addLoan');
+  openModal('overlay-loan');
+}
+function openEditLoan(id){
+  const l = loans.find(x=>x.id===id); if(!l) return;
+  editingLoanId = id;
+  document.getElementById('lnName').value = l.name||'';
+  document.getElementById('lnPhone').value = l.phone||'';
+  document.getElementById('lnTotal').value = l.total||0;
+  document.getElementById('lnPaid').value = l.paid||0;
+  setLoanDir(l.direction||'iOwe');
+  const titleEl = document.getElementById('loanSheetTitle');
+  titleEl.setAttribute('data-i18n','editLoan'); titleEl.textContent = t('editLoan');
+  openModal('overlay-loan');
 }
 async function saveLoan(){
   const name = document.getElementById('lnName').value.trim();
@@ -703,12 +756,16 @@ async function saveLoan(){
     name, phone: document.getElementById('lnPhone').value.trim(),
     direction: loanDirSelected,
     total: parseFloat(document.getElementById('lnTotal').value)||0,
-    paid: parseFloat(document.getElementById('lnPaid').value)||0,
-    createdAt: Date.now()
+    paid: parseFloat(document.getElementById('lnPaid').value)||0
   };
-  await store.add('loans', data);
-  ['lnName','lnPhone','lnTotal'].forEach(id=> document.getElementById(id).value='');
-  document.getElementById('lnPaid').value='0';
+  if(editingLoanId){
+    await store.update('loans', editingLoanId, data);
+  } else {
+    data.createdAt = Date.now();
+    await store.add('loans', data);
+  }
+  editingLoanId = null;
+  clearLoanForm();
   closeModal('overlay-loan');
 }
 async function addLoanPayment(id){
@@ -718,6 +775,54 @@ async function addLoanPayment(id){
   await store.update('loans', id, {paid: (l.paid||0) + amt});
 }
 async function deleteLoan(id){ if(confirm(t('confirmDelete'))) await store.remove('loans', id); }
+
+/* ---------------- Vault (saved logins) ---------------- */
+let editingVaultId = null;
+let revealedPasswords = {};
+function clearVaultForm(){ ['vWebsite','vUsername','vPassword','vNote'].forEach(id=> document.getElementById(id).value=''); }
+function openAddVault(){
+  editingVaultId = null;
+  clearVaultForm();
+  const titleEl = document.getElementById('vaultSheetTitle');
+  titleEl.setAttribute('data-i18n','addCredential'); titleEl.textContent = t('addCredential');
+  openModal('overlay-vault');
+}
+function openEditVault(id){
+  const v = vaults.find(x=>x.id===id); if(!v) return;
+  editingVaultId = id;
+  document.getElementById('vWebsite').value = v.website||'';
+  document.getElementById('vUsername').value = v.username||'';
+  document.getElementById('vPassword').value = v.password||'';
+  document.getElementById('vNote').value = v.note||'';
+  const titleEl = document.getElementById('vaultSheetTitle');
+  titleEl.setAttribute('data-i18n','editCredential'); titleEl.textContent = t('editCredential');
+  openModal('overlay-vault');
+}
+async function saveVault(){
+  const website = document.getElementById('vWebsite').value.trim();
+  if(!website){ alert(t('enterName')); return; }
+  const data = {
+    website, username: document.getElementById('vUsername').value.trim(),
+    password: document.getElementById('vPassword').value,
+    note: document.getElementById('vNote').value.trim()
+  };
+  if(editingVaultId){
+    await store.update('vaults', editingVaultId, data);
+  } else {
+    data.createdAt = Date.now();
+    await store.add('vaults', data);
+  }
+  editingVaultId = null;
+  clearVaultForm();
+  closeModal('overlay-vault');
+}
+async function deleteVault(id){ if(confirm(t('confirmDelete'))) await store.remove('vaults', id); }
+function toggleVaultPass(id){ revealedPasswords[id] = !revealedPasswords[id]; renderVault(); }
+function copyVaultField(id, field){
+  const v = vaults.find(x=>x.id===id); if(!v) return;
+  const text = v[field]||'';
+  if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(text).catch(()=>{}); }
+}
 
 /* ---------------- Clients: add / edit / payment / delete ---------------- */
 let editingClientId = null;
@@ -783,7 +888,7 @@ let clientCategoryFilter = 'all';
 function setClientCategoryFilter(cat){ clientCategoryFilter = cat; renderClients(); }
 
 /* ---------------- Rendering ---------------- */
-function renderAll(){ renderDashboard(); renderClients(); renderLoans(); renderReports(); }
+function renderAll(){ renderDashboard(); renderClients(); renderLoans(); renderReports(); renderVault(); }
 function sumByDateRange(type, start, end){
   return transactions.filter(tr=>tr.type===type && tr.date>=start && tr.date<=end).reduce((s,tr)=>s+(Number(tr.amount)||0),0);
 }
@@ -865,7 +970,13 @@ function renderClients(){
   }).join('');
   document.getElementById('clientsTotalLine').innerHTML = `${t('totalClients')}: <b>${clients.length}</b>`;
 
-  const filtered = clientCategoryFilter==='all' ? clients : clients.filter(c=>c.service===clientCategoryFilter);
+  const searchVal = (document.getElementById('clientSearch')?.value||'').trim().toLowerCase();
+  const filtered = clients.filter(c=>{
+    const matchesCat = clientCategoryFilter==='all' || c.service===clientCategoryFilter;
+    if(!matchesCat) return false;
+    if(!searchVal) return true;
+    return (c.name||'').toLowerCase().includes(searchVal) || (c.phone||'').toLowerCase().includes(searchVal) || (c.email||'').toLowerCase().includes(searchVal);
+  });
   const list = document.getElementById('clientsList');
   if(filtered.length===0){ list.innerHTML = `<div class="empty-note">${t('noClients')}</div>`; return; }
   list.innerHTML = [...filtered].sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)).map(c=>{
@@ -895,7 +1006,12 @@ function renderClients(){
 }
 
 function renderLoans(){
-  const filtered = loans.filter(l=>l.direction===loanTab);
+  const searchVal = (document.getElementById('loanSearch')?.value||'').trim().toLowerCase();
+  const filtered = loans.filter(l=>{
+    if(l.direction!==loanTab) return false;
+    if(!searchVal) return true;
+    return (l.name||'').toLowerCase().includes(searchVal) || (l.phone||'').toLowerCase().includes(searchVal);
+  });
   const list = document.getElementById('loansList');
   if(filtered.length===0){ list.innerHTML = `<div class="empty-note">${t('noLoans')}</div>`; return; }
   list.innerHTML = `<div class="list-card">` + filtered.map(l=>{
@@ -907,11 +1023,41 @@ function renderLoans(){
         </div>
       </div>
       <div class="row-actions">
+        <button class="icon-btn" onclick="openEditLoan('${l.id}')" title="${t('edit')}">✎</button>
         <button class="icon-btn" onclick="addLoanPayment('${l.id}')" title="${t('addPayment')}">+</button>
         <button class="icon-btn" onclick="deleteLoan('${l.id}')" title="${t('delete')}">✕</button>
       </div>
     </div>`;
   }).join('') + `</div>`;
+}
+
+function renderVault(){
+  const searchVal = (document.getElementById('vaultSearch')?.value||'').trim().toLowerCase();
+  const filtered = vaults.filter(v=> !searchVal || (v.website||'').toLowerCase().includes(searchVal) || (v.username||'').toLowerCase().includes(searchVal));
+  const list = document.getElementById('vaultList');
+  if(filtered.length===0){ list.innerHTML = `<div class="empty-note">${t('noCredentials')}</div>`; return; }
+  list.innerHTML = [...filtered].sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)).map(v=>{
+    const shown = !!revealedPasswords[v.id];
+    return `<div class="client-card">
+      <div class="client-top">
+        <div><div class="client-name">${escapeHtml(v.website)}</div></div>
+        <button class="icon-btn" onclick="toggleVaultPass('${v.id}')" title="${shown?t('hide'):t('reveal')}">${shown?'🙈':'👁'}</button>
+      </div>
+      <div class="client-meta">
+        <span>👤 ${escapeHtml(v.username||'')}</span>
+        <button class="icon-btn" onclick="copyVaultField('${v.id}','username')" title="${t('copy')}">📋</button>
+      </div>
+      <div class="client-meta">
+        <span>🔑 <span class="num">${shown ? escapeHtml(v.password||'') : '••••••••'}</span></span>
+        <button class="icon-btn" onclick="copyVaultField('${v.id}','password')" title="${t('copy')}">📋</button>
+      </div>
+      ${v.note?`<div class="row-sub" style="margin-top:8px;white-space:pre-wrap;">${escapeHtml(v.note)}</div>`:''}
+      <div class="client-actions">
+        <button class="btn-sm" onclick="openEditVault('${v.id}')">${t('edit')}</button>
+        <button class="btn-sm danger" onclick="deleteVault('${v.id}')">${t('delete')}</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function renderReports(){
